@@ -1,7 +1,7 @@
 ---
 name: hermes-social-coordination
-description: Coordinate meetups between agents via Hermes Social. Handles the full flow from proposal to confirmation with minimal user interaction.
-version: 3.0.0
+description: Coordinate meetups between agents via Hermes Social. Fully autonomous negotiation — agents use calendar and preference data to agree on a plan, then present it to users for one-tap confirmation.
+version: 4.0.0
 metadata:
   hermes:
     tags: [social, coordination, meetups, scheduling, agent-to-agent]
@@ -11,109 +11,135 @@ metadata:
 # Social Coordination
 
 Coordinate plans (coffee, dinner, meetings) with another person's agent.
+Agents negotiate **fully autonomously** using each user's calendar,
+preferences, and local knowledge. Users only see the final agreed plan.
 
 ## Roles
 
-Every coordination has an **initiator** (user asked to plan something) and
-a **receiver** (contact whose agent gets the request). Follow the correct
-flow for your role.
+Every coordination has an **initiator** and a **receiver**.
 
 ---
 
 ## INITIATOR FLOW (your user asked to plan something)
 
-### Step 1 — Send the request
+### Step 1 — Gather context and send a rich request
+
+Before sending, gather everything you know about your user:
+- Their calendar/availability (check calendar tools, memory, or known schedule)
+- Their interests and preferences (from memory, past conversations)
+- Local events or venues that fit
+
+Send a RICH request with all this context so the receiver's agent can
+match against their own user's data:
 
 ```
-social_contacts(query="...") → get contact_id
-social_send(contact_id, content=<JSON with activity, time, location, preferences>, data_type="coordination_request")
+social_send(contact_id, content=JSON.stringify({
+  "activity": "coffee",
+  "proposed_dates": ["Friday May 1", "Friday May 8"],
+  "proposed_times": ["9:00-12:00"],
+  "location_area": "Berlin Mitte",
+  "initiator_preferences": {
+    "interests": ["specialty coffee", "brunch", "walks"],
+    "dietary": "none",
+    "vibe": "casual, relaxed morning"
+  },
+  "initiator_availability": {
+    "Friday May 1": "free 9am-1pm",
+    "Friday May 8": "free 9am-11am"
+  },
+  "flexibility": "open to other suggestions"
+}), data_type="coordination_request")
 ```
 
-Be specific: include activity, date/time, location, preferences.
+### Step 2 — End the session
 
-### Step 2 — Tell the user and end the session
+> Sent a coordination request to Test Friend with your availability and preferences. I'll notify you when we've agreed on a plan.
 
-> Sent a coordination request to Test Friend. I'll notify you when they respond.
+DONE. Do NOT poll. Webhook handles the rest.
 
-DONE for now. Do NOT poll or sleep. When the receiver's agent responds,
-a webhook will fire and start a new session automatically.
+### Step 3 — Handle the response (webhook session)
 
-### Step 3 — Handle the response (new webhook session)
+When the receiver's agent responds, it will contain an **agreed plan**
+(the receiver's agent already matched calendars and preferences autonomously).
 
-You'll be woken up with the response. Check `social_inbox()` to read it.
 Present ONE clean message:
 
-> ☕ Test Friend agreed! Coffee at Zazza (Lehrter Str 24e), Wednesday 9:30am.
-> Confirm? (yes/no)
+> ☕ Agreed with Test Friend: Coffee at Zazza (Lehrter Str 24e),
+> Friday May 1 at 10am. Confirm?
 
-### Step 4 — Send confirmation
+### Step 4 — Send confirmation after user approves
 
-After user says yes:
 ```
-social_send(contact_id, content=<plan JSON with status: "confirmed">, data_type="confirmation")
+social_send(contact_id, content=JSON.stringify({
+  "status": "confirmed",
+  "plan": { ... the agreed plan ... }
+}), data_type="confirmation")
 ```
 
-> Confirmed! I'll let you know when Test Friend acknowledges.
+### Step 5 — Final notification (webhook)
 
-### Step 5 — Final notification (new webhook session)
-
-When the receiver sends `confirmed`, tell the user:
-
-> ✅ Test Friend confirmed. Coffee at Zazza, Wednesday 9:30am — you're all set.
-
-DONE. Do not respond further.
+When `confirmed` comes back → "All set! Coffee Friday 10am at Zazza."
 
 ---
 
 ## RECEIVER FLOW (another agent sent you a coordination request)
 
-You are woken up by a webhook. The message data is in the prompt.
+**THIS IS THE CRITICAL PART. You must negotiate AUTONOMOUSLY.**
 
-### Step 1 — Present the proposal to your user
+### Step 1 — Read the request and YOUR user's data
 
-Read the inbound message and present it clearly:
+The inbound message contains the initiator's availability, preferences,
+and proposed dates/times. Now gather YOUR user's data:
 
-> Meghan wants to meet for coffee Wednesday morning at Zazza
-> (Lehrter Str 24e, Berlin Mitte). What do you think?
+- Check your user's calendar/availability (from memory, calendar tools, known schedule)
+- Check your user's interests and preferences (from memory, past conversations)
+- Check for local events or venue options
 
-Let the user respond. They might say "yes", "sounds good", "how about
-Thursday instead?", or "no thanks".
+### Step 2 — Find the best match AUTONOMOUSLY
 
-### Step 2 — Respond to the initiator's agent
+Compare both users' data and pick the best option:
+- Overlapping free time slots
+- Shared interests or activities both enjoy
+- A specific venue that fits (use your local knowledge)
+- A concrete date, time, and place
 
-Based on user's answer:
+DO NOT ask your user for input. YOU decide based on what you know.
 
-If YES:
+### Step 3 — Respond with the agreed plan
+
 ```
-social_respond(interaction_id, content=<agreement JSON>, data_type="response")
+social_respond(interaction_id, content=JSON.stringify({
+  "status": "agreed",
+  "plan": {
+    "activity": "Coffee",
+    "date": "Friday May 1",
+    "time": "10:00 AM",
+    "location": "Zazza",
+    "address": "Lehrter Str 24e, Berlin Mitte",
+    "duration": "~1.5 hours",
+    "notes": "Great specialty coffee, opens 7:30am"
+  },
+  "reasoning": "Both free Friday May 1 morning. Zazza is in Mitte, has great reviews, matches the specialty coffee preference."
+}), data_type="response")
 ```
 
-If COUNTER-PROPOSAL:
-```
-social_respond(interaction_id, content=<counter JSON>, data_type="response")
-```
-Then poll for the initiator's reply and repeat.
+End the session. Do NOT notify your user yet.
 
-If NO:
-```
-social_respond(interaction_id, content=<decline JSON>, data_type="response")
-```
-DONE.
+### Step 4 — Confirmation arrives (webhook session)
 
-### Step 3 — Wait for confirmation
+When you receive a message with data_type containing "confirm", the
+initiator's user approved. NOW notify your user:
 
-After responding with agreement, end the session. When the initiator's user
-confirms and their agent sends `data_type="confirmation"`, a new webhook
-session starts. Notify your user:
+> ☕ Meghan confirmed: Coffee at Zazza (Lehrter Str 24e), Friday May 1 at 10am.
+> Sound good?
 
-> ✅ Meghan confirmed! Coffee at Zazza, Wednesday 9:30am — all set.
+### Step 5 — User confirms → send final confirmation
 
-Then send back:
 ```
 social_respond(interaction_id, content='{"status": "confirmed"}', data_type="confirmed")
 ```
 
-DONE. Do not respond further.
+DONE.
 
 ---
 
@@ -121,25 +147,24 @@ DONE. Do not respond further.
 
 | data_type | Sent by | Meaning |
 |---|---|---|
-| `coordination_request` | Initiator | "Let's plan something" |
-| `response` | Receiver | Agreement, counter-proposal, or decline |
-| `confirmation` | Initiator | "My user approved this plan" |
-| `confirmed` | Receiver | "My user saw the confirmation, we're set" |
+| `coordination_request` | Initiator | Rich request with availability + preferences |
+| `response` | Receiver | Agreed plan (receiver negotiated autonomously) |
+| `confirmation` | Initiator | "My user approved" |
+| `confirmed` | Receiver | "My user approved too — we're set" |
 
 ---
 
 ## Output Rules
 
-- **ONE message per step.** Don't send multiple Telegram messages.
-- **No narration.** Don't say "Loading skill...", "Checking inbox...", "Sending request...". Just do it and present the result.
-- **No emoji walls.** One or two relevant emoji max.
-- **No status updates.** Don't tell the user which step of the flow you're on.
-- **Be concise.** The user wants "Coffee at X, Wed 9:30am. Confirm?" not a paragraph.
+- **ONE message per step.** Never multiple Telegram messages.
+- **No narration.** Don't say "Loading skill...", "Checking inbox...". Just do it.
+- **No step-by-step status.** Don't tell the user which step you're on.
+- **Be concise.** "Coffee at X, Friday 10am. Confirm?" — that's it.
+- **Include the reasoning trace in the social_respond content** so it shows up in the message log, but do NOT show it to the user.
 
 ## Pitfalls
 
-- **DO NOT POLL** — webhooks handle notifications. Never loop sleep+inbox. Send and end the session.
-- **Contact IDs change** — always re-fetch before any operation.
-- **STOP on confirmed** — never respond to a `confirmed` message. The conversation is done.
-- **No old tools** — `social_coordinate`, `social_check_proposals`, `social_respond_proposal` do not exist.
-- **One message per step** — don't send multiple Telegram messages in one session.
+- **DO NOT ask the receiver's user during negotiation.** This is the #1 rule. You have their preferences and calendar — use them.
+- **DO NOT poll.** Webhooks handle all notifications.
+- **STOP on confirmed.** Never respond to a confirmed message.
+- **No old tools.** `social_coordinate`, `social_check_proposals`, `social_respond_proposal` do not exist.
