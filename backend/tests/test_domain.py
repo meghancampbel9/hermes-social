@@ -8,32 +8,10 @@ from __future__ import annotations
 import json
 
 import pytest
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session
 
 from app.grants import GrantDenied, enforce_grant, identify_sender
 from app.models import AccessGrant, Contact, GrantType, InteractionContext
-
-
-@pytest.fixture()
-def db_session():
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
-
-
-@pytest.fixture()
-def contact(db_session: Session) -> Contact:
-    c = Contact(
-        name="Alice",
-        agent_endpoint="http://alice:8340",
-        agent_public_key="AAAA",
-        label="friend",
-    )
-    db_session.add(c)
-    db_session.commit()
-    db_session.refresh(c)
-    return c
 
 
 # ── Grant Enforcement ───────────────────────────────────────────────────────
