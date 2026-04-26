@@ -91,9 +91,21 @@ def _post_webhook(payload: dict) -> None:
         logger.warning("Webhook notification to %s failed: %s", url, exc)
 
 
+# data_types that are purely terminal and need no notification at all.
+_SILENT_DATA_TYPES = frozenset({"acknowledgment", "ack", "thank_you"})
+
+
 def notify_message_received(contact: Any, data_type: str, data: dict,
                             interaction_id: str) -> None:
     contact_name = contact.name if hasattr(contact, "name") else str(contact)
+
+    if data_type in _SILENT_DATA_TYPES:
+        logger.info(
+            "Skipping webhook for terminal data_type=%s from %s",
+            data_type, contact_name,
+        )
+        return
+
     _post_webhook({
         "event": "message_received",
         "requires_action": True,

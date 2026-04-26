@@ -25,7 +25,20 @@ A2A/MCP-compatible framework) owns all business logic.
 3. Access the management UI at the configured external URL
 4. Add contacts via the UI or API
 5. Connect your host agent via MCP (port 8341)
-6. Configure the agent wake-up webhook (see below)
+6. Install agent skills (see below)
+7. Configure the agent wake-up webhook (see below)
+
+### Agent Skills
+
+The `skills/` directory contains Hermes agent skills that teach the agent
+how to use hermes-social's MCP tools for autonomous coordination. The deploy
+script (`deploy.sh`) automatically syncs these to your agent's skills directory.
+
+For manual install, copy `skills/social/` into your agent's skills directory:
+
+```bash
+cp -r skills/social/ ~/.hermes/skills/social/
+```
 
 ### Agent Wake-Up Webhook
 
@@ -48,22 +61,23 @@ platforms:
       routes:
         a2a-inbox:
           secret: "<shared secret — same as NOTIFICATION_WEBHOOK_SECRET>"
-          deliver: telegram          # deliver agent output to Telegram
+          deliver: telegram
           deliver_extra:
-            chat_id: "<your telegram chat id>"  # from channel_directory.json
+            chat_id: "<your telegram chat id>"
           prompt: >-
-            You received a social message from {contact} (type: {data_type}).
-            Message data: {data}.
-            IMPORTANT: Present this message to the user in a clear summary.
-            If it requires a commitment (meeting, event, agreement), ask the
-            user for explicit confirmation before responding via social_respond.
-            For informational messages, you may acknowledge automatically
-            using social_respond.
+            A social message arrived from {contact} (type: {data_type}).
+            Data: {data}.
+            Load the hermes-social-coordination skill and follow its procedure.
+            Your role is RECEIVER (the other agent initiated this).
 ```
 
-The `deliver: telegram` setting ensures all agent activity from inbound
-A2A messages is visible to the user. The prompt instructs the agent to
-ask for human confirmation before making commitments.
+The prompt is intentionally minimal — all coordination logic lives in the
+`hermes-social-coordination` skill (installed from `skills/` in this repo).
+This avoids conflicting instructions between the prompt and the skill.
+
+The 120-second webhook cooldown ensures that follow-up messages during
+an active negotiation don't spawn redundant agent sessions — the
+already-running agent picks them up via `social_inbox`.
 
 Then set in hermes-social's `.env`:
 
@@ -99,21 +113,49 @@ can trigger an agent run. The POST body is:
 ## Message Flow
 
 ```
-Agent A                          Agent B
-  │                                │
-  │ social_send("hello")           │
-  ▼                                ▼
-hermes-social A ──A2A──► hermes-social B
-                              │
-                              ├─ Auth (JWT + contact lookup)
-                              ├─ Grant check
-                              ├─ Store interaction
-                              ├─ Webhook → Agent B
-                              └─ Return ack
-                                   │
-Agent B reads social_inbox() ◄─────┘
-Agent B calls social_respond() ────► hermes-social A
+User A: "coordinate dinner with B"
+  │
+  ▼
+Agent A                              Agent B
+  │ social_send(request)               │
+  ▼                                    ▼
+hermes-social A ───A2A──────► hermes-social B
+                                  │
+                                  ├─ Store interaction
+                                  └─ Webhook → Agent B (first msg only)
+                                       │
+                                       ▼
+                              Agent B wakes up, reads inbox
+                              Agent B responds autonomously
+                                       │
+Agent A reads inbox ◄─── A2A ──────────┘
+Agent A responds   ──── A2A ──────────►  Agent B reads inbox
+  ... autonomous back-and-forth ...      ... via social_inbox ...
+                                       │
+  ┌────────────────────────────────────┘
+  ▼
+Agent A: "We agreed on Thursday 7pm at X"
+  │ → Present to User A → confirm?
+  │
+User A: "yes"
+  │
+Agent A → social_respond(confirmed) ──► Agent B
+                                         │
+                                         ▼
+                                    Notify User B:
+                                    "Dinner Thursday 7pm confirmed"
+                                    User B: "confirmed" (or auto-ack)
+                                         │
+                                         ▼
+Agent A notified ◄── A2A ── final ack ──┘
+  │
+User A: "All set!"
 ```
+
+The webhook cooldown (120s) ensures only the **first** inbound message
+from a new conversation triggers an agent wake-up. All subsequent messages
+during active negotiation are picked up by the already-running agent
+via `social_inbox` polling.
 
 ## Configuration
 
