@@ -41,6 +41,7 @@ export interface AgentMessage {
   id: string;
   direction: MessageDirection;
   contact_id: string | null;
+  contact_name: string;
   data_type: string;
   status: string;
   data: Record<string, unknown>;

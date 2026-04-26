@@ -20,7 +20,7 @@ class MessageOut(BaseModel):
     contact_name: str
     direction: str
     status: str
-    context_data: dict
+    data: dict
     created_at: str
 
 
@@ -58,7 +58,7 @@ def list_messages(
             contact_name=contact.name if contact else "Unknown",
             direction=i.direction,
             status=i.status,
-            context_data=json.loads(i.context_data),
+            data=json.loads(i.context_data),
             created_at=i.created_at.isoformat(),
         ))
     return results
