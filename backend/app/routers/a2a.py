@@ -3,6 +3,7 @@
 Thin routing layer: authentication, grant check, then store + ack via the
 generic handle_inbound function. No domain logic.
 """
+
 from __future__ import annotations
 
 import json
@@ -12,13 +13,12 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session, select
 
-from app.config import settings
 from app.database import get_session
 from app.executor import extract_data_part, handle_inbound, task_response
 from app.grants import GrantDenied, find_contact_by_endpoint
 from app.identity import get_agent_card
 from app.models import InteractionContext
-from app.notifications import fire_push_notifications, register_push_config
+from app.notifications import register_push_config
 from app.signing import verify_a2a_jwt
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,7 @@ def _authenticate_sender(request: Request, session: Session):
     token = auth_header[7:]
 
     import jwt as _jwt
+
     try:
         unverified = _jwt.decode(token, options={"verify_signature": False})
     except Exception:
@@ -56,7 +57,9 @@ def _authenticate_sender(request: Request, session: Session):
 
     contact = find_contact_by_endpoint(session, sender_url)
     if contact is None:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, {"error": "unknown_agent", "sender": sender_url})
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, {"error": "unknown_agent", "sender": sender_url}
+        )
 
     pub_key = contact.agent_public_key
     sender_pub = unverified.get("pub", "")
@@ -68,7 +71,10 @@ def _authenticate_sender(request: Request, session: Session):
             pub_key = sender_pub
             logger.info("Auto-populated public key for contact %s", contact.name)
         else:
-            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Contact has no public key and JWT has no 'pub' claim")
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                "Contact has no public key and JWT has no 'pub' claim",
+            )
 
     claims = verify_a2a_jwt(token, pub_key)
     if claims is None:
@@ -86,12 +92,17 @@ async def a2a_message_send(request: Request, session: Session = Depends(get_sess
     contact, claims = _authenticate_sender(request, session)
 
     from app.grants import enforce_grant
+
     try:
         enforce_grant(session, contact)
     except GrantDenied as exc:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, {
-            "error": "grant_denied", "required_grant": exc.grant_type,
-        })
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            {
+                "error": "grant_denied",
+                "required_grant": exc.grant_type,
+            },
+        )
 
     data_type, data = extract_data_part(body)
     message_obj = body.get("message", {})
@@ -121,11 +132,13 @@ def a2a_get_task(task_id: str, request: Request, session: Session = Depends(get_
 
     artifacts = []
     if ctx_data:
-        artifacts.append({
-            "artifactId": ictx.id + "-data",
-            "name": "context",
-            "parts": [{"data": ctx_data, "mediaType": "application/json"}],
-        })
+        artifacts.append(
+            {
+                "artifactId": ictx.id + "-data",
+                "name": "context",
+                "parts": [{"data": ctx_data, "mediaType": "application/json"}],
+            }
+        )
 
     return task_response(ictx.id, state, artifacts=artifacts if artifacts else None)
 
@@ -153,7 +166,9 @@ def a2a_cancel_task(task_id: str, request: Request, session: Session = Depends(g
 
 
 @router.post("/a2a/tasks/{task_id}/pushNotificationConfigs")
-async def a2a_create_push_config(task_id: str, request: Request, session: Session = Depends(get_session)):
+async def a2a_create_push_config(
+    task_id: str, request: Request, session: Session = Depends(get_session)
+):
     contact, _ = _authenticate_sender(request, session)
 
     ictx = session.get(InteractionContext, task_id)
@@ -161,11 +176,14 @@ async def a2a_create_push_config(task_id: str, request: Request, session: Sessio
         raise HTTPException(status.HTTP_404_NOT_FOUND, {"error": "TaskNotFoundError"})
 
     body = await request.json()
-    config = register_push_config(task_id, {
-        "url": body.get("url", ""),
-        "authentication": body.get("authentication"),
-        "contact_id": contact.id,
-    })
+    config = register_push_config(
+        task_id,
+        {
+            "url": body.get("url", ""),
+            "authentication": body.get("authentication"),
+            "contact_id": contact.id,
+        },
+    )
     return config
 
 
@@ -205,6 +223,7 @@ async def a2a_webhook(request: Request, session: Session = Depends(get_session))
 
             from app.models import Contact
             from app.notifications import notify_interaction_updated
+
             contact = session.get(Contact, ictx.contact_id) if ictx.contact_id else None
             if contact:
                 notify_interaction_updated(contact, ictx.id, ictx.status)

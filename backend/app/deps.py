@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Generator
 from typing import Annotated
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.config import settings
 from app.database import get_session

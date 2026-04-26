@@ -51,14 +51,16 @@ def list_messages(
     results = []
     for i in interactions:
         contact = session.get(Contact, i.contact_id) if i.contact_id else None
-        results.append(MessageOut(
-            id=i.id,
-            data_type=i.data_type,
-            contact_id=i.contact_id,
-            contact_name=contact.name if contact else "Unknown",
-            direction=i.direction,
-            status=i.status,
-            data=json.loads(i.context_data),
-            created_at=i.created_at.isoformat(),
-        ))
+        results.append(
+            MessageOut(
+                id=i.id,
+                data_type=i.data_type,
+                contact_id=i.contact_id,
+                contact_name=contact.name if contact else "Unknown",
+                direction=i.direction,
+                status=i.status,
+                data=json.loads(i.context_data),
+                created_at=i.created_at.isoformat(),
+            )
+        )
     return results

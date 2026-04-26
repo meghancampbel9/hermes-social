@@ -3,6 +3,7 @@
 Uses FastMCP for tool definitions and mounts into the FastAPI app
 via streamable_http_app().
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +13,6 @@ import logging
 from mcp.server.fastmcp import FastMCP
 from sqlmodel import Session, select
 
-from app.config import settings
 from app.database import engine
 from app.models import AccessGrant, Contact, InteractionContext, _utcnow
 
@@ -42,13 +42,15 @@ def social_contacts(query: str = "") -> str:
         for c in contacts:
             if query and query.lower() not in c.name.lower():
                 continue
-            results.append({
-                "id": c.id,
-                "name": c.name,
-                "agent_endpoint": c.agent_endpoint,
-                "label": c.label,
-                "metadata": json.loads(c.metadata_json),
-            })
+            results.append(
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "agent_endpoint": c.agent_endpoint,
+                    "label": c.label,
+                    "metadata": json.loads(c.metadata_json),
+                }
+            )
         return json.dumps(results, indent=2)
 
 
@@ -60,15 +62,18 @@ def social_contact_detail(contact_id: str) -> str:
         if contact is None:
             return json.dumps({"error": "Contact not found"})
         grants = session.exec(select(AccessGrant).where(AccessGrant.contact_id == contact_id)).all()
-        return json.dumps({
-            "id": contact.id,
-            "name": contact.name,
-            "agent_endpoint": contact.agent_endpoint,
-            "label": contact.label,
-            "notes": contact.notes,
-            "metadata": json.loads(contact.metadata_json),
-            "grants": {g.grant_type: g.allowed for g in grants},
-        }, indent=2)
+        return json.dumps(
+            {
+                "id": contact.id,
+                "name": contact.name,
+                "agent_endpoint": contact.agent_endpoint,
+                "label": contact.label,
+                "notes": contact.notes,
+                "metadata": json.loads(contact.metadata_json),
+                "grants": {g.grant_type: g.allowed for g in grants},
+            },
+            indent=2,
+        )
 
 
 @mcp.tool()
@@ -163,15 +168,17 @@ def social_inbox(limit: int = 20, data_type: str = "", contact_id: str = "") -> 
         results = []
         for i in interactions:
             contact = session.get(Contact, i.contact_id) if i.contact_id else None
-            results.append({
-                "id": i.id,
-                "data_type": i.data_type,
-                "contact": contact.name if contact else "Unknown",
-                "contact_id": i.contact_id,
-                "status": i.status,
-                "data": json.loads(i.context_data),
-                "created_at": i.created_at.isoformat(),
-            })
+            results.append(
+                {
+                    "id": i.id,
+                    "data_type": i.data_type,
+                    "contact": contact.name if contact else "Unknown",
+                    "contact_id": i.contact_id,
+                    "status": i.status,
+                    "data": json.loads(i.context_data),
+                    "created_at": i.created_at.isoformat(),
+                }
+            )
         return json.dumps(results, indent=2)
 
 
@@ -232,8 +239,9 @@ def social_respond(interaction_id: str, content: str, data_type: str = "response
 
 
 @mcp.tool()
-def social_interactions(data_type: str = "", status_filter: str = "",
-                        direction: str = "", limit: int = 20) -> str:
+def social_interactions(
+    data_type: str = "", status_filter: str = "", direction: str = "", limit: int = 20
+) -> str:
     """List all interactions. Optionally filter by data_type, status, or direction."""
     with _get_session() as session:
         stmt = select(InteractionContext).order_by(InteractionContext.created_at.desc())
@@ -247,15 +255,17 @@ def social_interactions(data_type: str = "", status_filter: str = "",
         results = []
         for i in interactions:
             contact = session.get(Contact, i.contact_id) if i.contact_id else None
-            results.append({
-                "id": i.id,
-                "data_type": i.data_type,
-                "contact": contact.name if contact else "Unknown",
-                "contact_id": i.contact_id,
-                "direction": i.direction,
-                "status": i.status,
-                "data": json.loads(i.context_data),
-                "created_at": i.created_at.isoformat(),
-                "updated_at": i.updated_at.isoformat(),
-            })
+            results.append(
+                {
+                    "id": i.id,
+                    "data_type": i.data_type,
+                    "contact": contact.name if contact else "Unknown",
+                    "contact_id": i.contact_id,
+                    "direction": i.direction,
+                    "status": i.status,
+                    "data": json.loads(i.context_data),
+                    "created_at": i.created_at.isoformat(),
+                    "updated_at": i.updated_at.isoformat(),
+                }
+            )
         return json.dumps(results, indent=2)
