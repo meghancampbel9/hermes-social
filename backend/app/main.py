@@ -47,11 +47,11 @@ app.add_middleware(
 
 # ── Routers ────────────────────────────────────────────────────────────────
 
-from app.routers.a2a import router as a2a_router
-from app.routers.auth import router as auth_router
-from app.routers.contacts import router as contacts_router
-from app.routers.interactions import router as interactions_router
-from app.routers.messages import router as messages_router
+from app.routers.a2a import router as a2a_router  # noqa: E402
+from app.routers.auth import router as auth_router  # noqa: E402
+from app.routers.contacts import router as contacts_router  # noqa: E402
+from app.routers.interactions import router as interactions_router  # noqa: E402
+from app.routers.messages import router as messages_router  # noqa: E402
 
 app.include_router(a2a_router)
 app.include_router(auth_router, prefix="/api")
