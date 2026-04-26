@@ -20,7 +20,9 @@ A2A/MCP-compatible framework) owns all business logic.
 
 ## Setup
 
-1. Copy `.env.example` to `.env` and configure
+### Docker (recommended)
+
+1. Copy `backend/.env.example` to `backend/.env` and fill in values
 2. `docker compose up -d`
 3. Access the management UI at the configured external URL
 4. Add contacts via the UI or API
@@ -38,6 +40,28 @@ For manual install, copy `skills/social/` into your agent's skills directory:
 
 ```bash
 cp -r skills/social/ ~/.hermes/skills/social/
+```
+
+### Local development
+
+Requires [uv](https://docs.astral.sh/uv/getting-started/installation/).
+
+```bash
+# Backend
+cd backend
+uv sync --group dev        # installs runtime + test + lint deps
+cp .env.example .env       # then edit .env
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8340
+uv run uvicorn app.mcp_run:app --host 0.0.0.0 --port 8341
+
+# Frontend (separate terminal)
+cd frontend
+npm ci
+npm run dev                # proxies /api/* to localhost:8340
+
+# Tests
+cd backend
+uv run pytest tests/
 ```
 
 ### Agent Wake-Up Webhook
