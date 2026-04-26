@@ -61,15 +61,16 @@ platforms:
       routes:
         a2a-inbox:
           secret: "<shared secret — same as NOTIFICATION_WEBHOOK_SECRET>"
-          deliver: telegram
-          deliver_extra:
-            chat_id: "<your telegram chat id>"
           prompt: >-
             A social message arrived from {contact} (type: {data_type}).
             Data: {data}.
             Load the hermes-social-coordination skill and follow its procedure.
-            Your role is RECEIVER (the other agent initiated this).
 ```
+
+The agent will deliver output to whichever platform has an active session
+(Telegram, Discord, Matrix, web terminal, etc.). To force a specific channel,
+add `deliver: telegram` (or `discord`, `matrix`) and `deliver_extra` with
+the channel-specific config.
 
 The prompt is intentionally minimal — all coordination logic lives in the
 `hermes-social-coordination` skill (installed from `skills/` in this repo).
