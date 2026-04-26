@@ -1,0 +1,117 @@
+"""Notification helpers (webhook, push notifications).
+
+All user-facing notifications are dispatched as structured JSON to a
+configurable webhook URL.  The host agent decides how to deliver them.
+"""
+from __future__ import annotations
+
+import hashlib
+import hmac as hmac_mod
+import json
+import logging
+import uuid
+from typing import Any
+
+import httpx
+
+from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+# ── Push Notification Storage ──────────────────────────────────────────────
+
+_push_configs: dict[str, list[dict]] = {}
+
+
+def register_push_config(task_id: str, config: dict) -> dict:
+    entry = {
+        "id": str(uuid.uuid4()),
+        "taskId": task_id,
+        "url": config.get("url", ""),
+        "authentication": config.get("authentication"),
+        **{k: v for k, v in config.items() if k not in ("url", "authentication")},
+    }
+    if task_id not in _push_configs:
+        _push_configs[task_id] = []
+    _push_configs[task_id].append(entry)
+    logger.info("Push config registered for task %s -> %s", task_id, entry["url"])
+    return entry
+
+
+def fire_push_notifications(task_id: str, status_state: str) -> None:
+    configs = _push_configs.get(task_id, [])
+    if not configs:
+        return
+
+    payload: dict[str, Any] = {
+        "statusUpdate": {
+            "taskId": task_id,
+            "status": {"state": status_state, "timestamp": ""},
+            "metadata": {},
+        }
+    }
+
+    for config in configs:
+        url = config.get("url", "")
+        if not url:
+            continue
+        try:
+            headers = {"Content-Type": "application/json"}
+            auth = config.get("authentication")
+            if auth:
+                scheme = auth.get("scheme", "Bearer")
+                creds = auth.get("credentials", "")
+                if creds:
+                    headers["Authorization"] = f"{scheme} {creds}"
+            httpx.post(url, json=payload, headers=headers, timeout=15)
+            logger.info("Push notification sent to %s for task %s", url, task_id)
+        except Exception as exc:
+            logger.warning("Push notification to %s failed: %s", url, exc)
+
+
+# ── Webhook Notifications ──────────────────────────────────────────────────
+
+
+def _post_webhook(payload: dict) -> None:
+    url = settings.notification_webhook_url
+    if not url:
+        logger.debug("No notification_webhook_url configured; skipping")
+        return
+    try:
+        body = json.dumps(payload).encode()
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+        secret = settings.notification_webhook_secret
+        if secret:
+            sig = hmac_mod.new(secret.encode(), body, hashlib.sha256).hexdigest()
+            headers["X-Webhook-Signature"] = sig
+        httpx.post(url, content=body, headers=headers, timeout=10)
+        logger.info("Webhook notification sent: %s", payload.get("event"))
+    except Exception as exc:
+        logger.warning("Webhook notification to %s failed: %s", url, exc)
+
+
+def notify_message_received(contact: Any, data_type: str, data: dict,
+                            interaction_id: str) -> None:
+    contact_name = contact.name if hasattr(contact, "name") else str(contact)
+    _post_webhook({
+        "event": "message_received",
+        "requires_action": True,
+        "contact": contact_name,
+        "data_type": data_type,
+        "interaction_id": interaction_id,
+        "data": data,
+    })
+
+
+def notify_interaction_updated(contact: Any, interaction_id: str,
+                               status: str, data: dict | None = None) -> None:
+    contact_name = contact.name if hasattr(contact, "name") else str(contact)
+    _post_webhook({
+        "event": "interaction_updated",
+        "requires_action": False,
+        "contact": contact_name,
+        "interaction_id": interaction_id,
+        "status": status,
+        "data": data or {},
+    })

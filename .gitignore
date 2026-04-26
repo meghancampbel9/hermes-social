@@ -1,0 +1,31 @@
+# Data
+data/
+data-test/
+*.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+.expo/
+
+# Build output
+frontend/dist/
+
+# Environment (secrets)
+.env
+.env.test
+.env.local
+.env.production
+
+# Private docs
+TEST_SETUP.md
+
+# IDE
+.vscode/
+.idea/
+*.swp

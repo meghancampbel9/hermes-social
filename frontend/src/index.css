@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { @apply border-border; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #444; }
+}
+
+@layer components {
+  .input {
+    @apply w-full bg-surface-2 border border-border rounded px-3 py-2.5 text-sm text-fg;
+    @apply placeholder:text-zinc-600 focus:outline-none focus:border-accent/50;
+  }
+}
