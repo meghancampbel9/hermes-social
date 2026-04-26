@@ -24,13 +24,8 @@ Every coordination has an **initiator** and a **receiver**.
 
 ### Step 1 — Gather context and send a rich request
 
-Before sending, gather everything you know about your user:
-- Their calendar/availability (check calendar tools, memory, or known schedule)
-- Their interests and preferences (from memory, past conversations)
-- Local events or venues that fit
-
-Send a RICH request with all this context so the receiver's agent can
-match against their own user's data:
+Load the **user-profile** skill to get your user's calendar, preferences,
+interests, and favorite venues. Then send a RICH request:
 
 ```
 social_send(contact_id, content=JSON.stringify({
@@ -89,11 +84,8 @@ When `confirmed` comes back → "All set! Coffee Friday 10am at Zazza."
 ### Step 1 — Read the request and YOUR user's data
 
 The inbound message contains the initiator's availability, preferences,
-and proposed dates/times. Now gather YOUR user's data:
-
-- Check your user's calendar/availability (from memory, calendar tools, known schedule)
-- Check your user's interests and preferences (from memory, past conversations)
-- Check for local events or venue options
+and proposed dates/times. Load the **user-profile** skill to get YOUR
+user's calendar, preferences, interests, and favorite venues.
 
 ### Step 2 — Find the best match AUTONOMOUSLY
 
@@ -123,7 +115,12 @@ social_respond(interaction_id, content=JSON.stringify({
 }), data_type="response")
 ```
 
-End the session. Do NOT notify your user yet.
+**CRITICAL: Do NOT write ANY text to the user during this phase.**
+Your only output is the social_respond tool call. Say nothing.
+Do not explain your reasoning. Do not narrate. The user will be
+notified later when the initiator's user confirms.
+
+End the session immediately after the tool call.
 
 ### Step 4 — Confirmation arrives (webhook session)
 

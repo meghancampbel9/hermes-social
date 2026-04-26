@@ -12,6 +12,7 @@ __pycache__/
 # Node
 node_modules/
 .expo/
+deploy.sh
 
 # Build output
 frontend/dist/
