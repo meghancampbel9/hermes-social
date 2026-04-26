@@ -20,20 +20,18 @@ dependencies = [
 ]
 
 [dependency-groups]
-test = [
+dev = [
     "pytest>=8.0,<9",
     "pytest-asyncio>=0.24,<1",
-]
-lint = [
     "ruff>=0.9,<1",
-]
-dev = [
-    { include-group = "test" },
-    { include-group = "lint" },
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
+[tool.ruff]
+line-length = 100
+
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+per-file-ignores = { "tests/**" = ["E402"] }
