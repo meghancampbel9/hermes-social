@@ -4,6 +4,7 @@ Provides message builders for the A2A wire format, an HTTP client for
 outbound calls, and the generic handle_inbound function that stores every
 inbound message and fires a webhook notification.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -97,8 +98,13 @@ async def send_a2a_message(endpoint: str, body: dict) -> dict | None:
                 resp.raise_for_status()
                 return resp.json()
         except (httpx.HTTPError, httpx.TimeoutException) as exc:
-            logger.warning("A2A attempt %d/%d to %s failed: %s",
-                           attempt + 1, settings.agent_retry_attempts, url, exc)
+            logger.warning(
+                "A2A attempt %d/%d to %s failed: %s",
+                attempt + 1,
+                settings.agent_retry_attempts,
+                url,
+                exc,
+            )
             if attempt < settings.agent_retry_attempts - 1:
                 await asyncio.sleep(delay)
                 delay *= 4
@@ -153,9 +159,15 @@ async def handle_inbound(
     logger.info("Stored inbound %s from %s (interaction=%s)", data_type, contact.name, ictx.id)
 
     from app.notifications import notify_message_received
+
     notify_message_received(contact, data_type, data, ictx.id)
 
-    return message_response(data_part("ack", {
-        "received": True,
-        "interaction_id": ictx.id,
-    }))
+    return message_response(
+        data_part(
+            "ack",
+            {
+                "received": True,
+                "interaction_id": ictx.id,
+            },
+        )
+    )

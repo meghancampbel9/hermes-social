@@ -1,0 +1,28 @@
+# Version control
+.git
+.gitignore
+
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.venv
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/data/
+
+# Node
+frontend/node_modules
+frontend/dist
+
+# Dev/CI
+.github
+deploy/
+*.md
+CLAUDE.md
+
+# IDE
+.vscode
+.idea
+**/*.swp

@@ -10,9 +10,9 @@ def _patched_init(self, settings=None):
 
 TransportSecurityMiddleware.__init__ = _patched_init
 
-from app.mcp_server import mcp  # noqa: E402
 from app.database import init_db  # noqa: E402
 from app.identity import init_identity  # noqa: E402
+from app.mcp_server import mcp  # noqa: E402
 
 init_db()
 init_identity()

@@ -7,13 +7,18 @@ COPY frontend/ .
 RUN npm run build
 
 # --- Stage 2: Python backend ---
-FROM python:3.12-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_NO_DEV=1
+ENV PATH="/app/.venv/bin:$PATH"
+
 WORKDIR /app
 
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync --locked --no-install-project
 
 COPY backend/ .
+RUN uv sync --locked
 
 # Copy built SPA into /app/static
 COPY --from=frontend /build/dist /app/static

@@ -62,7 +62,9 @@ def list_interactions(
 
 
 @router.get("/{interaction_id}", response_model=InteractionOut)
-def get_interaction(interaction_id: str, user: CurrentUser, session: Session = Depends(get_session)):
+def get_interaction(
+    interaction_id: str, user: CurrentUser, session: Session = Depends(get_session)
+):
     ictx = session.get(InteractionContext, interaction_id)
     if ictx is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Interaction not found")
