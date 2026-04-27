@@ -39,6 +39,7 @@ def register_push_config(task_id: str, config: dict) -> dict:
     logger.info("Push config registered for task %s -> %s", task_id, entry["url"])
     return entry
 
+
 async def fire_push_notifications(task_id: str, status_state: str) -> None:
     configs = _push_configs.get(task_id, [])
     if not configs:
