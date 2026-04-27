@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    environment: str = "production"
     database_url: str = "sqlite:///./data/hermes_social.db"
     data_dir: str = "./data"
     agent_name: str = "hermes-social"
