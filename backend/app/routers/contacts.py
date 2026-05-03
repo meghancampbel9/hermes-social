@@ -168,6 +168,7 @@ def update_contact(
         contact.metadata_json = json.dumps(body.metadata)
 
     from datetime import datetime, timezone
+
     contact.updated_at = datetime.now(timezone.utc)
     session.add(contact)
     session.commit()
@@ -207,7 +208,9 @@ def update_grant(
         existing.allowed = body.allowed
         session.add(existing)
     else:
-        session.add(AccessGrant(contact_id=contact_id, grant_type=GrantType.messaging, allowed=body.allowed))
+        session.add(
+            AccessGrant(contact_id=contact_id, grant_type=GrantType.messaging, allowed=body.allowed)
+        )
 
     session.commit()
     return _contact_to_out(contact, session)

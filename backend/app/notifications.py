@@ -3,6 +3,7 @@
 All user-facing notifications are dispatched as structured JSON to a
 configurable webhook URL.  The host agent decides how to deliver them.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -95,35 +96,36 @@ def _post_webhook(payload: dict) -> None:
 _SILENT_DATA_TYPES = frozenset({"acknowledgment", "ack", "thank_you"})
 
 
-def notify_message_received(contact: Any, data_type: str, data: dict,
-                            interaction_id: str) -> None:
+def notify_message_received(contact: Any, data_type: str, data: dict, interaction_id: str) -> None:
     contact_name = contact.name if hasattr(contact, "name") else str(contact)
-
     if data_type in _SILENT_DATA_TYPES:
-        logger.info(
-            "Skipping webhook for terminal data_type=%s from %s",
-            data_type, contact_name,
-        )
+        logger.info("Skipping webhook for terminal data_type=%s from %s", data_type, contact_name)
         return
-
-    _post_webhook({
+    payload = {
         "event": "message_received",
         "requires_action": True,
         "contact": contact_name,
         "data_type": data_type,
         "interaction_id": interaction_id,
         "data": data,
-    })
+    }
+    from app.inbox_stream import publish as publish_inbox_event
+
+    publish_inbox_event(payload)
+    _post_webhook(payload)
 
 
-def notify_interaction_updated(contact: Any, interaction_id: str,
-                               status: str, data: dict | None = None) -> None:
+def notify_interaction_updated(
+    contact: Any, interaction_id: str, status: str, data: dict | None = None
+) -> None:
     contact_name = contact.name if hasattr(contact, "name") else str(contact)
-    _post_webhook({
-        "event": "interaction_updated",
-        "requires_action": False,
-        "contact": contact_name,
-        "interaction_id": interaction_id,
-        "status": status,
-        "data": data or {},
-    })
+    _post_webhook(
+        {
+            "event": "interaction_updated",
+            "requires_action": False,
+            "contact": contact_name,
+            "interaction_id": interaction_id,
+            "status": status,
+            "data": data or {},
+        }
+    )

@@ -19,7 +19,6 @@ frontend/dist/
 
 # Environment (secrets)
 .env
-.env.test
 .env.local
 .env.production
 

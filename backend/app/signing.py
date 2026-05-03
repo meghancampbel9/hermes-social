@@ -4,6 +4,7 @@ Provides short-lived JWT tokens signed with our Ed25519 private key for
 outbound requests, and verification of inbound JWTs against a contact's
 known public key.
 """
+
 from __future__ import annotations
 
 import time
@@ -17,7 +18,7 @@ from nacl.encoding import Base64Encoder
 from nacl.signing import VerifyKey
 
 from app.config import settings
-from app.identity import get_signing_key, get_public_key_b64
+from app.identity import get_public_key_b64, get_signing_key
 
 JWT_ALGORITHM = "EdDSA"
 JWT_LIFETIME_SECONDS = 120
