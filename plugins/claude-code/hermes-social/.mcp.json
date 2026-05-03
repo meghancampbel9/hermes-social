@@ -2,10 +2,7 @@
   "mcpServers": {
     "hermes-social": {
       "type": "http",
-      "url": "${HERMES_SOCIAL_MCP_URL:-http://localhost:8341/mcp}",
-      "headers": {
-        "Authorization": "Bearer ${HERMES_SOCIAL_TOKEN}"
-      }
+      "url": "${HERMES_SOCIAL_MCP_URL:-http://localhost:8341/mcp}"
     }
   }
 }

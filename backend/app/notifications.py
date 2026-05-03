@@ -101,16 +101,18 @@ def notify_message_received(contact: Any, data_type: str, data: dict, interactio
     if data_type in _SILENT_DATA_TYPES:
         logger.info("Skipping webhook for terminal data_type=%s from %s", data_type, contact_name)
         return
-    _post_webhook(
-        {
-            "event": "message_received",
-            "requires_action": True,
-            "contact": contact_name,
-            "data_type": data_type,
-            "interaction_id": interaction_id,
-            "data": data,
-        }
-    )
+    payload = {
+        "event": "message_received",
+        "requires_action": True,
+        "contact": contact_name,
+        "data_type": data_type,
+        "interaction_id": interaction_id,
+        "data": data,
+    }
+    from app.inbox_stream import publish as publish_inbox_event
+
+    publish_inbox_event(payload)
+    _post_webhook(payload)
 
 
 def notify_interaction_updated(
