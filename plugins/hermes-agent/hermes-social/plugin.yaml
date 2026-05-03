@@ -1,0 +1,9 @@
+name: hermes-social
+version: 0.1.0
+description: Agent-to-agent messaging via the hermes-social sidecar. Bundles the messaging and coordination skills, registers a /social slash command, and a `hermes social` CLI subcommand. Tools come from the hermes-social MCP server, configured separately in ~/.hermes/config.yaml.
+author: hermes-social
+requires_env:
+  HERMES_SOCIAL_URL:
+    description: Base URL of the hermes-social backend (e.g. https://hermes.example.com)
+  HERMES_SOCIAL_TOKEN:
+    description: Bearer token for the hermes-social API
