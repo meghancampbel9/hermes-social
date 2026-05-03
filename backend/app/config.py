@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    environment: str = "production"
     database_url: str = "sqlite:///./data/hermes_social.db"
     data_dir: str = "./data"
     agent_name: str = "hermes-social"
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
     a2a_webhook_path: str = "/a2a/webhook"
     notification_webhook_url: str = ""
     notification_webhook_secret: str = ""
+    allow_registration: bool = True
 
     model_config = {"env_prefix": "HERMES_SOCIAL_", "env_file": ".env"}
 
