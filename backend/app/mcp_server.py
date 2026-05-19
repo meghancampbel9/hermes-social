@@ -76,12 +76,30 @@ def social_contact_detail(contact_id: str) -> str:
         )
 
 
-_COORDINATION_KEYWORDS = frozenset({
-    "meeting", "meetup", "meet", "coffee", "lunch", "dinner", "drinks",
-    "hangout", "hang_out", "get_together", "catch_up", "brunch",
-    "coordination", "coordinate", "schedule", "planning", "plan",
-    "proposal", "invite", "invitation",
-})
+_COORDINATION_KEYWORDS = frozenset(
+    {
+        "meeting",
+        "meetup",
+        "meet",
+        "coffee",
+        "lunch",
+        "dinner",
+        "drinks",
+        "hangout",
+        "hang_out",
+        "get_together",
+        "catch_up",
+        "brunch",
+        "coordination",
+        "coordinate",
+        "schedule",
+        "planning",
+        "plan",
+        "proposal",
+        "invite",
+        "invitation",
+    }
+)
 
 
 def _normalize_data_type(data_type: str, content_payload: dict) -> str:
@@ -96,8 +114,13 @@ def _normalize_data_type(data_type: str, content_payload: dict) -> str:
     content_str = json.dumps(content_payload).lower()
     for kw in ("meeting", "coffee", "lunch", "dinner", "drinks", "brunch", "meetup"):
         action_words = (
-            "propose", "plan", "schedule", "invite",
-            "coordinate", "want to meet", "get together",
+            "propose",
+            "plan",
+            "schedule",
+            "invite",
+            "coordinate",
+            "want to meet",
+            "get together",
         )
         if kw in content_str and any(w in content_str for w in action_words):
             logger.info(
@@ -389,16 +412,18 @@ def social_coordinate(contact_id: str, activity: str, details: str = "") -> str:
 
     _fire_and_forget(endpoint, body)
 
-    return json.dumps({
-        "sent": True,
-        "contact": contact.name,
-        "activity": activity,
-        "message": (
-            f"Coordination request sent to {contact.name}. "
-            f"Their agent will negotiate a plan. "
-            f"You'll be notified when a plan is ready — do NOT poll."
-        ),
-    })
+    return json.dumps(
+        {
+            "sent": True,
+            "contact": contact.name,
+            "activity": activity,
+            "message": (
+                f"Coordination request sent to {contact.name}. "
+                f"Their agent will negotiate a plan. "
+                f"You'll be notified when a plan is ready — do NOT poll."
+            ),
+        }
+    )
 
 
 @mcp.tool()
@@ -463,14 +488,16 @@ def social_confirm_plan(contact_id: str) -> str:
 
     _fire_and_forget(endpoint, body)
 
-    return json.dumps({
-        "confirmed": True,
-        "plan": plan,
-        "message": (
-            "Confirmation sent. The other person still needs to accept. "
-            "Tell your user: 'Sent confirmation. I'll let you know when they accept.'"
-        ),
-    })
+    return json.dumps(
+        {
+            "confirmed": True,
+            "plan": plan,
+            "message": (
+                "Confirmation sent. The other person still needs to accept. "
+                "Tell your user: 'Sent confirmation. I'll let you know when they accept.'"
+            ),
+        }
+    )
 
 
 @mcp.tool()
@@ -514,10 +541,12 @@ def social_accept_plan(interaction_id: str) -> str:
 
     _fire_and_forget(endpoint, body)
 
-    return json.dumps({
-        "accepted": True,
-        "message": "Plan accepted and confirmation sent. Tell your user: 'Confirmed! Enjoy.'",
-    })
+    return json.dumps(
+        {
+            "accepted": True,
+            "message": "Plan accepted and confirmation sent. Tell your user: 'Confirmed! Enjoy.'",
+        }
+    )
 
 
 @mcp.tool()

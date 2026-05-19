@@ -102,11 +102,17 @@ _SILENT_DATA_TYPES = frozenset({"acknowledgment", "ack", "thank_you"})
 # silently without the user seeing intermediate messages.
 # Includes common LLM-invented variants that social_send normalization
 # should already catch, but we double-check here as a safety net.
-_AGENT_ONLY_DATA_TYPES = frozenset({
-    "coordination_request",
-    "meeting_proposal", "meeting_request", "meetup_request",
-    "coffee_proposal", "schedule_request", "planning_request",
-})
+_AGENT_ONLY_DATA_TYPES = frozenset(
+    {
+        "coordination_request",
+        "meeting_proposal",
+        "meeting_request",
+        "meetup_request",
+        "coffee_proposal",
+        "schedule_request",
+        "planning_request",
+    }
+)
 
 
 async def notify_message_received(

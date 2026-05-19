@@ -18,9 +18,7 @@ def require_test_env():
     from app.config import settings
 
     if settings.environment != "test":
-        pytest.fail(
-            f"Tests must run with SHADOWNET_ENVIRONMENT=test, got '{settings.environment}'"
-        )
+        pytest.fail(f"Tests must run with SHADOWNET_ENVIRONMENT=test, got '{settings.environment}'")
 
 
 @pytest.fixture()
